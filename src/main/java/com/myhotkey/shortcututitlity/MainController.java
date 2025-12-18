@@ -9,10 +9,14 @@ import javafx.scene.control.ComboBox;
 import javafx.collections.FXCollections;
 import com.myhotkey.shortcututitlity.enums.SystemAction;
 import javafx.scene.input.KeyCode;
+import javafx.scene.effect.DropShadow;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.Priority;
 import javafx.geometry.Pos;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.SVGPath;
+import javafx.scene.paint.Color;
 import com.myhotkey.shortcututitlity.model.Shortcut;
 
 import java.util.HashSet;
@@ -27,9 +31,20 @@ public class MainController {
     @FXML
     private VBox shortcutListContainer;
 
-
     private List<Shortcut> sharedShortcutList;
     private JsonManager jsonManager;
+    private GlobalHotkeyService hotkeyService;
+
+    @FXML
+    private javafx.scene.shape.Circle statusDot;
+    @FXML
+    private Label statusLabel;
+    @FXML
+    private HBox statusBadge; // Added statusBadge field
+    @FXML
+    private SVGPath powerIcon;
+    @FXML
+    private Button toggleButton;
     private final Set<KeyCode> activeKeys = new HashSet<>();
 
     @FXML
@@ -46,30 +61,28 @@ public class MainController {
         card.getStyleClass().add("shortcut-card");
         card.setAlignment(Pos.CENTER_LEFT);
 
-        // Applying the modern styling we discussed
-        card.setStyle("-fx-background-color: rgba(30, 41, 59, 0.5); -fx-padding: 15; -fx-background-radius: 12; -fx-border-color: rgba(255, 255, 255, 0.05);");
-
         // Keyboard Visuals (The "KBD" look)
         HBox keysBox = new HBox(5);
         keysBox.setAlignment(Pos.CENTER);
         for (String key : keys.split("\\+")) {
             Label k = new Label(key.trim());
-            k.setStyle("-fx-background-color: #334155; -fx-text-fill: white; -fx-padding: 4 8; -fx-background-radius: 4; -fx-font-size: 11px; -fx-font-weight: bold;");
+            k.getStyleClass().add("kbd-key");
             keysBox.getChildren().add(k);
         }
 
         VBox details = new VBox(2);
         Label title = new Label(functionName);
-        title.setStyle("-fx-text-fill: white; -fx-font-weight: bold;");
+        title.getStyleClass().add("card-title");
         Label subtitle = new Label("System automated trigger");
-        subtitle.setStyle("-fx-text-fill: #64748b; -fx-font-size: 10px;");
+        subtitle.getStyleClass().add("card-subtitle");
         details.getChildren().addAll(title, subtitle);
         HBox.setHgrow(details, Priority.ALWAYS);
 
         Button deleteBtn = new Button("✕");
-        deleteBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #ef4444; -fx-cursor: hand; -fx-font-size: 16px;");
+        deleteBtn.getStyleClass().add("delete-button");
         deleteBtn.setOnAction(e -> {
-            // Since shortcut is an object in the shared list, remove(shortcut) works perfectly
+            // Since shortcut is an object in the shared list, remove(shortcut) works
+            // perfectly
             shortcutListContainer.getChildren().remove(card);
             if (sharedShortcutList != null) {
                 sharedShortcutList.remove(shortcut);
@@ -100,12 +113,18 @@ public class MainController {
             activeKeys.remove(event.getCode());
             event.consume();
         });
+
+        // Set initial UI state
+        updateStatusUI();
     }
 
     // 2. MANUAL: Called by MainApp to pass shared data.
-    public void setDependencies(List<Shortcut> sharedShortcutList, JsonManager jsonManager) {
+    public void setDependencies(List<Shortcut> sharedShortcutList, JsonManager jsonManager,
+            GlobalHotkeyService hotkeyService) {
         this.sharedShortcutList = sharedShortcutList;
         this.jsonManager = jsonManager;
+        this.hotkeyService = hotkeyService;
+        updateStatusUI();
 
         shortcutListContainer.getChildren().clear();
         if (this.sharedShortcutList != null) {
@@ -115,14 +134,58 @@ public class MainController {
         }
     }
 
+    @FXML
+    private void handleToggleService() {
+        if (hotkeyService != null) {
+            if (hotkeyService.isActive()) {
+                hotkeyService.stopHook();
+            } else {
+                hotkeyService.startHook();
+            }
+            updateStatusUI();
+        }
+    }
+
+    private void updateStatusUI() {
+        if (hotkeyService != null && hotkeyService.isActive()) {
+            statusDot.setFill(javafx.scene.paint.Color.web("#22c55e"));
+            if (statusDot.getEffect() instanceof DropShadow ds) {
+                ds.setColor(javafx.scene.paint.Color.web("#22c55e"));
+            }
+            statusLabel.getStyleClass().remove("status-label-offline");
+            statusBadge.getStyleClass().remove("status-badge-offline");
+            statusLabel.setText("LIVE");
+            powerIcon.setStroke(javafx.scene.paint.Color.web("#ef4444")); // Red for "Stop" action
+            toggleButton.setStyle("-fx-text-fill: #ef4444;");
+        } else {
+            statusDot.setFill(javafx.scene.paint.Color.web("#ef4444"));
+            if (statusDot.getEffect() instanceof DropShadow ds) {
+                ds.setColor(javafx.scene.paint.Color.web("#ef4444"));
+            }
+            statusLabel.setText("OFFLINE");
+            if (!statusLabel.getStyleClass().contains("status-label-offline")) {
+                statusLabel.getStyleClass().add("status-label-offline");
+            }
+            if (!statusBadge.getStyleClass().contains("status-badge-offline")) {
+                statusBadge.getStyleClass().add("status-badge-offline");
+            }
+            powerIcon.setStroke(javafx.scene.paint.Color.web("#22c55e")); // Green for "Start" action
+            toggleButton.setStyle("-fx-text-fill: #22c55e;");
+        }
+    }
+
     private void updateShortcutText() {
         StringBuilder sb = new StringBuilder();
 
         // Match the canonical order: Ctrl -> Alt -> Shift -> Win -> Key
-        if (activeKeys.contains(KeyCode.CONTROL)) sb.append("Ctrl+");
-        if (activeKeys.contains(KeyCode.ALT)) sb.append("Alt+");
-        if (activeKeys.contains(KeyCode.SHIFT)) sb.append("Shift+");
-        if (activeKeys.contains(KeyCode.WINDOWS) || activeKeys.contains(KeyCode.COMMAND)) sb.append("Win+");
+        if (activeKeys.contains(KeyCode.CONTROL))
+            sb.append("Ctrl+");
+        if (activeKeys.contains(KeyCode.ALT))
+            sb.append("Alt+");
+        if (activeKeys.contains(KeyCode.SHIFT))
+            sb.append("Shift+");
+        if (activeKeys.contains(KeyCode.WINDOWS) || activeKeys.contains(KeyCode.COMMAND))
+            sb.append("Win+");
 
         // Find the non-modifier key
         for (KeyCode code : activeKeys) {
@@ -135,17 +198,18 @@ public class MainController {
         shortcutInputField.setText(sb.toString());
     }
 
-
     @FXML
     private void handleAddShortcut() {
         String keys = shortcutInputField.getText();
         SystemAction action = functionComboBox.getValue();
 
-        if (keys == null || keys.isEmpty() || action == null) return;
+        if (keys == null || keys.isEmpty() || action == null)
+            return;
 
         Shortcut newShortcut = new Shortcut(keys, action);
 
-        if (sharedShortcutList == null) sharedShortcutList = new ArrayList<>();
+        if (sharedShortcutList == null)
+            sharedShortcutList = new ArrayList<>();
 
         sharedShortcutList.add(newShortcut);
         jsonManager.saveShortcuts(sharedShortcutList);

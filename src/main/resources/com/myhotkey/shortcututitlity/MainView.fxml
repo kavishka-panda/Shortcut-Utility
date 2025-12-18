@@ -4,40 +4,42 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.shape.Circle?>
+<?import javafx.scene.shape.SVGPath?>
 <?import javafx.scene.effect.DropShadow?>
 
-<VBox prefWidth="800" prefHeight="650" spacing="25"
-      style="-fx-background-color: linear-gradient(to bottom right, #0f172a, #1e293b);"
+<VBox prefWidth="800" prefHeight="650" spacing="25" styleClass="main-container"
       xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.myhotkey.shortcututitlity.MainController">
 
-    <padding>
-        <Insets top="40" right="40" bottom="40" left="40"/>
-    </padding>
-
-    <HBox alignment="CENTER_LEFT" spacing="15">
+    <HBox alignment="CENTER_LEFT" spacing="15" fillHeight="false">
         <VBox HBox.hgrow="ALWAYS">
-            <Label text="KeyFlow Utility" style="-fx-text-fill: white; -fx-font-size: 32px; -fx-font-weight: 900; -fx-letter-spacing: -1px;"/>
-            <Label text="System-wide automation at your fingertips." style="-fx-text-fill: #64748b; -fx-font-size: 14px;"/>
+            <Label text="KeyFlow Utility" styleClass="title-label"/>
+            <Label text="System-wide automation at your fingertips." styleClass="subtitle-label"/>
         </VBox>
-        <HBox alignment="CENTER" spacing="10" style="-fx-background-color: rgba(34, 197, 94, 0.1); -fx-padding: 8 16; -fx-background-radius: 30; -fx-border-color: rgba(34, 197, 94, 0.3); -fx-border-radius: 30;">
-            <Circle radius="4" fill="#22c55e">
+            <HBox fx:id="statusBadge" alignment="CENTER" spacing="6" styleClass="status-badge">
+            <Circle fx:id="statusDot" radius="4" fill="#22c55e">
                 <effect><DropShadow color="#22c55e" radius="10" spread="0.5"/></effect>
             </Circle>
-            <Label text="LIVE" style="-fx-text-fill: #22c55e; -fx-font-weight: bold; -fx-font-size: 11px;"/>
+            <Label fx:id="statusLabel" text="LIVE" styleClass="status-label"/>
         </HBox>
+        <Button fx:id="toggleButton" onAction="#handleToggleService" styleClass="shutdown-button" focusTraversable="false">
+            <graphic>
+                <SVGPath fx:id="powerIcon" content="M12 2v10 M18.4 6.6a9 9 0 1 1-12.8 0" 
+                         fill="TRANSPARENT" stroke="#ef4444" strokeWidth="2" strokeLineCap="ROUND"/>
+            </graphic>
+        </Button>
     </HBox>
 
-    <VBox spacing="20" style="-fx-background-color: rgba(255, 255, 255, 0.03); -fx-padding: 25; -fx-background-radius: 16; -fx-border-color: rgba(255, 255, 255, 0.1); -fx-border-radius: 16;">
+    <VBox spacing="20" styleClass="card-container">
         <HBox spacing="20" alignment="BOTTOM_LEFT">
             <VBox spacing="10" HBox.hgrow="ALWAYS">
-                <Label text="KEY COMBINATION" style="-fx-text-fill: #94a3b8; -fx-font-weight: bold; -fx-font-size: 10px; -fx-letter-spacing: 1px;"/>
+                <Label text="KEY COMBINATION" styleClass="input-label"/>
                 <TextField fx:id="shortcutInputField" promptText="Click and press keys..." editable="false" focusTraversable="false"
                            styleClass="modern-input"/>
             </VBox>
 
             <VBox spacing="10" HBox.hgrow="ALWAYS">
-                <Label text="ACTION" style="-fx-text-fill: #94a3b8; -fx-font-weight: bold; -fx-font-size: 10px; -fx-letter-spacing: 1px;"/>
+                <Label text="ACTION" styleClass="input-label"/>
                 <ComboBox fx:id="functionComboBox" promptText="Choose function..." maxWidth="Infinity" styleClass="modern-combo"/>
             </VBox>
 
@@ -45,9 +47,9 @@
         </HBox>
     </VBox>
 
-    <Label text="Active Configurations" style="-fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold;"/>
+    <Label text="Active Configurations" styleClass="section-header"/>
 
-    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="NEVER" style="-fx-background: transparent; -fx-background-color: transparent;">
+    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="NEVER">
         <VBox fx:id="shortcutListContainer" spacing="12">
         </VBox>
     </ScrollPane>

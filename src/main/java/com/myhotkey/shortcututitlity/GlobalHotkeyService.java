@@ -13,8 +13,8 @@ import java.util.logging.Logger;
 
 public class GlobalHotkeyService implements NativeKeyListener {
     private Robot robot;
-    private java.util.List<Shortcut> shortcuts;
-    private JsonManager jsonManager;
+    private List<Shortcut> shortcuts;
+    private boolean enabled = true;
 
     public GlobalHotkeyService() {
         try {
@@ -29,6 +29,12 @@ public class GlobalHotkeyService implements NativeKeyListener {
     }
 
     public void startHook() {
+        this.enabled = true;
+        if (GlobalScreen.isNativeHookRegistered()) {
+            System.out.println("Native Hook already registered. Enabling soft hook.");
+            return;
+        }
+
         // Disable JNativeHook's noisy logging
         Logger logger = Logger.getLogger(GlobalScreen.class.getPackage().getName());
         logger.setLevel(Level.WARNING);
@@ -43,28 +49,62 @@ public class GlobalHotkeyService implements NativeKeyListener {
         }
     }
 
+    public boolean isActive() {
+        return enabled;
+    }
+
+    public void stopHook() {
+        this.enabled = false;
+        System.out.println("Soft Hook Disabled (Native hook remains registered).");
+    }
+
+    public void unregisterService() {
+        try {
+            if (GlobalScreen.isNativeHookRegistered()) {
+                GlobalScreen.unregisterNativeHook();
+                System.out.println("Native Hook Unregistered Successfully during cleanup.");
+            }
+        } catch (NativeHookException ex) {
+            System.err.println("Could not unregister native hook: " + ex.getMessage());
+        }
+    }
+
     @Override
     public void nativeKeyPressed(NativeKeyEvent e) {
-// Now 'shortcuts' is available here!
+        if (!enabled) {
+            return;
+        }
+
         String pressedKey = NativeKeyEvent.getKeyText(e.getKeyCode());
         int modifiers = e.getModifiers();
 
-        // Build your canonical string (Ctrl+Alt+Key)
         StringBuilder sb = new StringBuilder();
-        if ((modifiers & NativeKeyEvent.CTRL_L_MASK) != 0) sb.append("Ctrl+");
-        if ((modifiers & NativeKeyEvent.ALT_L_MASK) != 0) sb.append("Alt+");
-        if ((modifiers & NativeKeyEvent.SHIFT_L_MASK) != 0) sb.append("Shift+");
+        if ((modifiers & NativeKeyEvent.CTRL_L_MASK) != 0)
+            sb.append("Ctrl+");
+        if ((modifiers & NativeKeyEvent.ALT_L_MASK) != 0)
+            sb.append("Alt+");
+        if ((modifiers & NativeKeyEvent.SHIFT_L_MASK) != 0)
+            sb.append("Shift+");
         sb.append(pressedKey);
 
         String currentCombo = sb.toString();
 
-        // Loop through the SHARED list
-        for (Shortcut s : shortcuts) {
-            if (s.getKeyCombo().equalsIgnoreCase(currentCombo)) {
-                s.getAction().execute(robot);
-                break;
+        if (shortcuts != null) {
+            for (Shortcut s : shortcuts) {
+                if (s.getKeyCombo().equalsIgnoreCase(currentCombo)) {
+                    s.getAction().execute(robot);
+                    break;
+                }
             }
         }
+    }
+
+    @Override
+    public void nativeKeyReleased(NativeKeyEvent e) {
+    }
+
+    @Override
+    public void nativeKeyTyped(NativeKeyEvent e) {
     }
 
     private boolean isModifierKey(int keyCode) {

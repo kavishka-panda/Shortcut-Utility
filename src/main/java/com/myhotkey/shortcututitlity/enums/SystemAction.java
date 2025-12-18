@@ -3,18 +3,13 @@ package com.myhotkey.shortcututitlity.enums;
 import com.fasterxml.jackson.annotation.JsonCreator;
 
 import java.awt.*;
+import java.awt.event.KeyEvent;
 
 public enum SystemAction {
     VOLUME_UP {
         @Override
         public void execute(Robot robot) {
-            try {
-                // Implementation for volume up action
-                robot.keyPress(521);
-                robot.keyRelease(521);
-            } catch (IllegalArgumentException exception) {
-                executeVBS(175);
-            }
+            executeVBS(175);
         }
     },
     VOLUME_DOWN {
@@ -23,11 +18,35 @@ public enum SystemAction {
             executeVBS(174);
         }
     },
+    MUTE {
+        @Override
+        public void execute(Robot robot){
+            executeVBS(173);
+        }
+    },
+    PLAY_PAUSE {
+        @Override
+        public void execute(Robot robot) {
+            executeVBS(179);
+        }
+    },
+    NEXT_TRACK {
+        @Override
+        public void execute(Robot robot) {
+            executeVBS(176);
+        }
+    },
+    PREV_TRACK {
+        @Override
+        public void execute(Robot robot) {
+            executeVBS(177);
+        }
+    },
     BRIGHTNESS_UP {
         @Override
         public void execute(Robot robot) {
             String script = "$b = (Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightness).CurrentBrightness; " +
-                    "if($b -le 90) { (Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, $b + 10) }";
+                    "if($b -le 90) { (Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, $b + 20) }";
             executePowerShell(script);
         }
     },
@@ -35,7 +54,7 @@ public enum SystemAction {
         @Override
         public void execute(Robot robot) {
             String script = "$b = (Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightness).CurrentBrightness; " +
-                    "if($b -ge 10) { (Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, $b - 10) }";
+                    "if($b -ge 10) { (Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, $b - 20) }";
             executePowerShell(script);
         }
     };
@@ -61,4 +80,4 @@ public enum SystemAction {
         String cmd = "mshta vbscript:CreateObject(\"WScript.Shell\").SendKeys(chr(" + code + "))(window.close)";
         try { Runtime.getRuntime().exec(cmd); } catch (Exception ignored) {}
     }
-    }
+}

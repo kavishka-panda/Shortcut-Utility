@@ -8,17 +8,25 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
-import java.awt.*;
+import java.awt.AWTException;
+import java.awt.MenuItem;
+import java.awt.PopupMenu;
+import java.awt.SystemTray;
+import java.awt.Toolkit;
+import java.awt.TrayIcon;
 import java.util.List;
 
 import javax.swing.*;
 
+import atlantafx.base.theme.PrimerDark;
 
 public class MainApp extends Application {
     private Stage stage;
+    private GlobalHotkeyService hotkeyService;
 
     @Override
     public void start(Stage stage) throws Exception {
+        Application.setUserAgentStylesheet(new PrimerDark().getUserAgentStylesheet());
 
         this.stage = stage;
         Platform.setImplicitExit(false);
@@ -28,8 +36,7 @@ public class MainApp extends Application {
         List<Shortcut> sharedShortcutList = jsonManager.loadShortcuts();
 
         // 2. Setup the Background Service with the shared list
-        GlobalHotkeyService hotkeyService = new GlobalHotkeyService();
-        // Use a setter method instead of constructor parameter
+        hotkeyService = new GlobalHotkeyService();
         hotkeyService.setShortcuts(sharedShortcutList);
 
         // Start service in a background thread
@@ -42,13 +49,21 @@ public class MainApp extends Application {
         Parent root = loader.load();
 
         MainController controller = loader.getController();
-        // Use the correct method name from your controller
-        controller.setDependencies(sharedShortcutList, jsonManager);
+        controller.setDependencies(sharedShortcutList, jsonManager, hotkeyService);
 
         Scene scene = new Scene(root);
         scene.getStylesheets().add(getClass().getResource("style.css").toExternalForm());
 
         stage.setTitle("KeyFlow Utility");
+
+        // Use fully qualified name to avoid ambiguity with java.awt.Image
+        try {
+            javafx.scene.image.Image appIcon = new javafx.scene.image.Image(getClass().getResourceAsStream("icon.png"));
+            stage.getIcons().add(appIcon);
+        } catch (Exception e) {
+            System.err.println("Could not load window icon: " + e.getMessage());
+        }
+
         stage.setScene(scene);
         stage.show();
 
@@ -56,14 +71,16 @@ public class MainApp extends Application {
 
         stage.setOnCloseRequest(event -> {
             event.consume(); // Prevent the actual closing
-            stage.hide();    // Just hide the window
+            stage.hide(); // Just hide the window
         });
     }
 
     private void createTrayIcon(Stage stage) {
-        if(SystemTray.isSupported()){
+        if (SystemTray.isSupported()) {
             SystemTray tray = SystemTray.getSystemTray();
-            Image image = Toolkit.getDefaultToolkit().getImage(getClass().getResource("icon.png"));
+
+            // Use fully qualified name or specific AWT Image
+            java.awt.Image image = Toolkit.getDefaultToolkit().getImage(getClass().getResource("icon.png"));
 
             PopupMenu popup = new PopupMenu();
 
@@ -72,7 +89,8 @@ public class MainApp extends Application {
 
             MenuItem exitItem = new MenuItem("Exit");
             exitItem.addActionListener(e -> {
-                System.exit(0); // Fully close the app
+                Platform.exit(); // This will trigger the stop() method for cleanup
+                System.exit(0);
             });
 
             popup.add(showItem);
@@ -81,8 +99,6 @@ public class MainApp extends Application {
 
             TrayIcon trayIcon = new TrayIcon(image, "KeyFlow Utility", popup);
             trayIcon.setImageAutoSize(true);
-
-            // Double click tray to open app
             trayIcon.addActionListener(e -> Platform.runLater(stage::show));
 
             try {
@@ -91,6 +107,14 @@ public class MainApp extends Application {
                 System.err.println("TrayIcon could not be added.");
             }
         }
+    }
+
+    @Override
+    public void stop() throws Exception {
+        if (hotkeyService != null) {
+            hotkeyService.unregisterService();
+        }
+        super.stop();
     }
 
     public static void main(String[] args) {

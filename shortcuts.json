@@ -1,13 +1,25 @@
 [ {
   "action" : "VOLUME_DOWN",
-  "keyCombo" : "Alt+D"
-}, {
-  "action" : "BRIGHTNESS_UP",
-  "keyCombo" : "Alt+P"
-}, {
-  "action" : "BRIGHTNESS_DOWN",
-  "keyCombo" : "Alt+O"
+  "keyCombo" : "Ctrl+F11"
 }, {
   "action" : "VOLUME_UP",
-  "keyCombo" : "Alt+Shift+F9"
+  "keyCombo" : "Ctrl+F12"
+}, {
+  "action" : "MUTE",
+  "keyCombo" : "Ctrl+F10"
+}, {
+  "action" : "BRIGHTNESS_UP",
+  "keyCombo" : "Ctrl+F9"
+}, {
+  "action" : "BRIGHTNESS_DOWN",
+  "keyCombo" : "Ctrl+F8"
+}, {
+  "action" : "PLAY_PAUSE",
+  "keyCombo" : "Ctrl+F6"
+}, {
+  "action" : "PREV_TRACK",
+  "keyCombo" : "Ctrl+F5"
+}, {
+  "action" : "NEXT_TRACK",
+  "keyCombo" : "Ctrl+F7"
 } ]
