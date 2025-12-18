@@ -1,0 +1,13 @@
+[ {
+  "action" : "VOLUME_DOWN",
+  "keyCombo" : "Alt+D"
+}, {
+  "action" : "BRIGHTNESS_UP",
+  "keyCombo" : "Alt+P"
+}, {
+  "action" : "BRIGHTNESS_DOWN",
+  "keyCombo" : "Alt+O"
+}, {
+  "action" : "VOLUME_UP",
+  "keyCombo" : "Alt+Shift+F9"
+} ]

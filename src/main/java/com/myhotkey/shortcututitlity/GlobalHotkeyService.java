@@ -4,83 +4,73 @@ import com.github.kwhat.jnativehook.GlobalScreen;
 import com.github.kwhat.jnativehook.NativeHookException;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
+import com.myhotkey.shortcututitlity.model.Shortcut;
 
 import java.awt.*;
-import java.awt.event.KeyEvent;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class GlobalHotkeyService implements NativeKeyListener {
     private Robot robot;
+    private java.util.List<Shortcut> shortcuts;
+    private JsonManager jsonManager;
 
     public GlobalHotkeyService() {
-        try{
+        try {
             this.robot = new Robot();
-        }catch (AWTException exception){
-            System.err.println("GlobalHotkeyService caught exception: "+exception.getMessage());
+        } catch (AWTException e) {
+            e.printStackTrace();
         }
     }
 
-    public void startHook(){
+    public void setShortcuts(List<Shortcut> shortcuts) {
+        this.shortcuts = shortcuts;
+    }
+
+    public void startHook() {
+        // Disable JNativeHook's noisy logging
         Logger logger = Logger.getLogger(GlobalScreen.class.getPackage().getName());
         logger.setLevel(Level.WARNING);
         logger.setUseParentHandlers(false);
 
-        try{
+        try {
             GlobalScreen.registerNativeHook();
-            System.out.println("Register native hook");
-        }catch (NativeHookException ex){
-            System.err.println("There was a problem registering the native hook: "+ex.getMessage());
+            GlobalScreen.addNativeKeyListener(this);
+            System.out.println("Native Hook Registered Successfully.");
+        } catch (NativeHookException ex) {
+            System.err.println("Could not register native hook: " + ex.getMessage());
         }
-        GlobalScreen.addNativeKeyListener(this);
-
     }
 
     @Override
-    public void nativeKeyPressed(NativeKeyEvent nativeEvent) {
-        int KeyCode = nativeEvent.getKeyCode();
-        boolean isAltDown = (nativeEvent.getModifiers() & NativeKeyEvent.ALT_L_MASK) != 0;
+    public void nativeKeyPressed(NativeKeyEvent e) {
+// Now 'shortcuts' is available here!
+        String pressedKey = NativeKeyEvent.getKeyText(e.getKeyCode());
+        int modifiers = e.getModifiers();
 
-        if(isAltDown && KeyCode == NativeKeyEvent.VC_U){
-            handleVolumeUp();
-        }
+        // Build your canonical string (Ctrl+Alt+Key)
+        StringBuilder sb = new StringBuilder();
+        if ((modifiers & NativeKeyEvent.CTRL_L_MASK) != 0) sb.append("Ctrl+");
+        if ((modifiers & NativeKeyEvent.ALT_L_MASK) != 0) sb.append("Alt+");
+        if ((modifiers & NativeKeyEvent.SHIFT_L_MASK) != 0) sb.append("Shift+");
+        sb.append(pressedKey);
 
-        if(isAltDown && KeyCode == NativeKeyEvent.VC_D){
-            handelVolumeDown();
-        }
-    }
+        String currentCombo = sb.toString();
 
-    public void handelVolumeDown(){
-        if(robot != null){
-                String cmd = "mshta vbscript:CreateObject(\"WScript.Shell\").SendKeys(chr(174))(window.close)";
-                try {
-                    Runtime.getRuntime().exec(cmd);
-                    System.out.println("Volume Down triggered via VBScript fallback.");
-                } catch (Exception runtimeEx) {
-                    runtimeEx.printStackTrace();
-                }
-        }
-    }
-
-    public void handleVolumeUp() {
-        if (robot != null) {
-            try {
-                robot.keyPress(521);
-                robot.keyRelease(521);
-            } catch (IllegalArgumentException e) {
-                String cmd = "mshta vbscript:CreateObject(\"WScript.Shell\").SendKeys(chr(175))(window.close)";
-                try { Runtime.getRuntime().exec(cmd); } catch (Exception ex) {}
+        // Loop through the SHARED list
+        for (Shortcut s : shortcuts) {
+            if (s.getKeyCombo().equalsIgnoreCase(currentCombo)) {
+                s.getAction().execute(robot);
+                break;
             }
         }
     }
 
-    @Override
-    public void nativeKeyReleased(NativeKeyEvent nativeEvent) {
-
-    }
-
-    @Override
-    public void nativeKeyTyped(NativeKeyEvent nativeEvent) {
-
+    private boolean isModifierKey(int keyCode) {
+        return keyCode == NativeKeyEvent.VC_CONTROL ||
+                keyCode == NativeKeyEvent.VC_ALT ||
+                keyCode == NativeKeyEvent.VC_SHIFT ||
+                keyCode == NativeKeyEvent.VC_META;
     }
 }
