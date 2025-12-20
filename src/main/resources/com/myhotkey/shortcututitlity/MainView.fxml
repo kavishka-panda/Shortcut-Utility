@@ -7,51 +7,67 @@
 <?import javafx.scene.shape.SVGPath?>
 <?import javafx.scene.effect.DropShadow?>
 
-<VBox prefWidth="800" prefHeight="650" spacing="25" styleClass="main-container"
-      xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.myhotkey.shortcututitlity.MainController">
-
-    <HBox alignment="CENTER_LEFT" spacing="15" fillHeight="false">
-        <VBox HBox.hgrow="ALWAYS">
-            <Label text="KeyFlow Utility" styleClass="title-label"/>
-            <Label text="System-wide automation at your fingertips." styleClass="subtitle-label"/>
-        </VBox>
-            <HBox fx:id="statusBadge" alignment="CENTER" spacing="6" styleClass="status-badge">
-            <Circle fx:id="statusDot" radius="4" fill="#22c55e">
-                <effect><DropShadow color="#22c55e" radius="10" spread="0.5"/></effect>
-            </Circle>
-            <Label fx:id="statusLabel" text="LIVE" styleClass="status-label"/>
-        </HBox>
-        <Button fx:id="toggleButton" onAction="#handleToggleService" styleClass="shutdown-button" focusTraversable="false">
+<VBox fx:id="rootContainer" prefWidth="800" prefHeight="650" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.myhotkey.shortcututitlity.MainController" style="-fx-background-color: #0f172a;">
+    
+    <!-- Custom Title Bar -->
+    <HBox fx:id="titleBar" alignment="CENTER_LEFT" spacing="10" styleClass="custom-title-bar">
+        <padding><Insets left="15" right="10" top="8" bottom="8"/></padding>
+        <Label text="KeyFlow Utility" styleClass="title-bar-text"/>
+        <Region HBox.hgrow="ALWAYS" />
+        
+        <Button onAction="#handleShowSettings" styleClass="title-bar-button">
             <graphic>
-                <SVGPath fx:id="powerIcon" content="M12 2v10 M18.4 6.6a9 9 0 1 1-12.8 0" 
-                         fill="TRANSPARENT" stroke="#ef4444" strokeWidth="2" strokeLineCap="ROUND"/>
+                <SVGPath content="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z M12 15a3 3 0 1 1 0-6 3 3 0 0 1 0 6z" 
+                         fill="TRANSPARENT" stroke="#94a3b8" strokeWidth="1.5" strokeLineCap="ROUND" scaleX="0.7" scaleY="0.7"/>
             </graphic>
         </Button>
+        <Button text="—" onAction="#handleMinimize" styleClass="title-bar-button"/>
+        <Button text="✕" onAction="#handleClose" styleClass="title-bar-button, close-button"/>
     </HBox>
 
-    <VBox spacing="20" styleClass="card-container">
-        <HBox spacing="20" alignment="BOTTOM_LEFT">
-            <VBox spacing="10" HBox.hgrow="ALWAYS">
-                <Label text="KEY COMBINATION" styleClass="input-label"/>
-                <TextField fx:id="shortcutInputField" promptText="Click and press keys..." editable="false" focusTraversable="false"
-                           styleClass="modern-input"/>
+    <VBox spacing="25" styleClass="main-container" VBox.vgrow="ALWAYS">
+        <HBox alignment="CENTER_LEFT" spacing="15" fillHeight="false">
+            <VBox HBox.hgrow="ALWAYS">
+                <Label text="KeyFlow Utility" styleClass="title-label"/>
+                <Label text="System-wide automation at your fingertips." styleClass="subtitle-label"/>
             </VBox>
-
-            <VBox spacing="10" HBox.hgrow="ALWAYS">
-                <Label text="ACTION" styleClass="input-label"/>
-                <ComboBox fx:id="functionComboBox" promptText="Choose function..." maxWidth="Infinity" styleClass="modern-combo"/>
-            </VBox>
-
-            <Button text="ADD SHORTCUT" onAction="#handleAddShortcut" styleClass="primary-button"/>
+                <HBox fx:id="statusBadge" alignment="CENTER" spacing="6" styleClass="status-badge">
+                <Circle fx:id="statusDot" radius="4" fill="#22c55e">
+                    <effect><DropShadow color="#22c55e" radius="10" spread="0.5"/></effect>
+                </Circle>
+                <Label fx:id="statusLabel" text="LIVE" styleClass="status-label"/>
+            </HBox>
+            <Button fx:id="toggleButton" onAction="#handleToggleService" styleClass="shutdown-button" focusTraversable="false">
+                <graphic>
+                    <SVGPath fx:id="powerIcon" content="M12 2v10 M18.4 6.6a9 9 0 1 1-12.8 0" 
+                             fill="TRANSPARENT" stroke="#ef4444" strokeWidth="2" strokeLineCap="ROUND"/>
+                </graphic>
+            </Button>
         </HBox>
-    </VBox>
 
-    <Label text="Active Configurations" styleClass="section-header"/>
+        <VBox spacing="20" styleClass="card-container">
+            <HBox spacing="20" alignment="BOTTOM_LEFT">
+                <VBox spacing="10" HBox.hgrow="ALWAYS">
+                    <Label text="KEY COMBINATION" styleClass="input-label"/>
+                    <TextField fx:id="shortcutInputField" promptText="Click and press keys..." editable="false" focusTraversable="false"
+                               styleClass="modern-input"/>
+                </VBox>
 
-    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="NEVER">
-        <VBox fx:id="shortcutListContainer" spacing="12">
+                <VBox spacing="10" prefWidth="250">
+                    <Label text="ACTION" styleClass="input-label"/>
+                    <ComboBox fx:id="functionComboBox" promptText="Choose function..." maxWidth="Infinity" styleClass="modern-combo"/>
+                </VBox>
+
+                <Button text="ADD SHORTCUT" onAction="#handleAddShortcut" styleClass="primary-button" prefWidth="200"/>
+            </HBox>
         </VBox>
-    </ScrollPane>
 
+        <Label text="Active Configurations" styleClass="section-header"/>
+
+        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="NEVER" VBox.vgrow="ALWAYS">
+            <VBox fx:id="shortcutListContainer" spacing="12">
+            </VBox>
+        </ScrollPane>
+    </VBox>
 </VBox>

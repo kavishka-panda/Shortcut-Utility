@@ -7,6 +7,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 
 import java.awt.AWTException;
 import java.awt.MenuItem;
@@ -29,7 +30,16 @@ public class MainApp extends Application {
         Application.setUserAgentStylesheet(new PrimerDark().getUserAgentStylesheet());
 
         this.stage = stage;
+        stage.initStyle(StageStyle.UNDECORATED);
         Platform.setImplicitExit(false);
+
+        createTrayIcon(stage);
+        boolean startMinimized = getParameters().getRaw().contains("--tray");
+        if (startMinimized) {
+            System.out.println("Starting minimized");
+        } else {
+            stage.show();
+        }
 
         // 1. Initialize Storage and Load Shortcuts
         JsonManager jsonManager = new JsonManager();
@@ -66,8 +76,7 @@ public class MainApp extends Application {
 
         stage.setScene(scene);
         stage.show();
-
-        createTrayIcon(stage);
+        stage.centerOnScreen();
 
         stage.setOnCloseRequest(event -> {
             event.consume(); // Prevent the actual closing

@@ -12,16 +12,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class GlobalHotkeyService implements NativeKeyListener {
-    private Robot robot;
     private List<Shortcut> shortcuts;
     private boolean enabled = true;
 
     public GlobalHotkeyService() {
-        try {
-            this.robot = new Robot();
-        } catch (AWTException e) {
-            e.printStackTrace();
-        }
+
     }
 
     public void setShortcuts(List<Shortcut> shortcuts) {
@@ -92,7 +87,7 @@ public class GlobalHotkeyService implements NativeKeyListener {
         if (shortcuts != null) {
             for (Shortcut s : shortcuts) {
                 if (s.getKeyCombo().equalsIgnoreCase(currentCombo)) {
-                    s.getAction().execute(robot);
+                    s.getAction().execute();
                     break;
                 }
             }

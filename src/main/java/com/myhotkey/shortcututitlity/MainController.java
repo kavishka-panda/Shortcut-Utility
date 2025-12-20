@@ -16,9 +16,16 @@ import javafx.scene.layout.Priority;
 import javafx.geometry.Pos;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.SVGPath;
-import javafx.scene.paint.Color;
 import com.myhotkey.shortcututitlity.model.Shortcut;
+import javafx.stage.Stage;
+import javafx.stage.Window;
 
+import javafx.scene.layout.Priority;
+
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ButtonType;
+import javafx.scene.layout.GridPane;
+import javafx.geometry.Insets;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ArrayList;
@@ -45,6 +52,14 @@ public class MainController {
     private SVGPath powerIcon;
     @FXML
     private Button toggleButton;
+    @FXML
+    private HBox titleBar;
+    @FXML
+    private VBox rootContainer;
+
+    private double xOffset = 0;
+    private double yOffset = 0;
+
     private final Set<KeyCode> activeKeys = new HashSet<>();
 
     @FXML
@@ -116,6 +131,23 @@ public class MainController {
 
         // Set initial UI state
         updateStatusUI();
+
+        // Window Dragging Logic
+        titleBar.setOnMousePressed(event -> {
+            xOffset = event.getSceneX();
+            yOffset = event.getSceneY();
+        });
+
+        titleBar.setOnMouseDragged(event -> {
+            Stage stage = (Stage) rootContainer.getScene().getWindow();
+            stage.setX(event.getScreenX() - xOffset);
+            stage.setY(event.getScreenY() - yOffset);
+        });
+
+        // Ensure startup is enabled by default
+        if (!isStartupEnabled()) {
+            enableStartup();
+        }
     }
 
     // 2. MANUAL: Called by MainApp to pass shared data.
@@ -223,5 +255,105 @@ public class MainController {
     }
 
     @FXML
+    private void handleShowSettings() {
+        Stage settingsStage = new Stage();
+        settingsStage.setTitle("Settings");
+        settingsStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
+        settingsStage.initOwner(rootContainer.getScene().getWindow());
+
+        VBox dialogRoot = new VBox();
+        dialogRoot.getStylesheets().add(getClass().getResource("style.css").toExternalForm());
+        dialogRoot.setStyle("-fx-background-color: #0f172a;");
+        dialogRoot.setPrefWidth(400);
+
+        // Content area
+        VBox contentBody = new VBox(25);
+        contentBody.setPadding(new Insets(30));
+        contentBody.setStyle("-fx-background-color: transparent;");
+
+        // Section: General
+        VBox generalSection = new VBox(15);
+        Label generalHeader = new Label("GENERAL SETTINGS");
+        generalHeader.getStyleClass().add("settings-section-header");
+
+        CheckBox startupCheckBox = new CheckBox("Launch at system startup");
+        startupCheckBox.setSelected(isStartupEnabled());
+        startupCheckBox.getStyleClass().add("modern-checkbox");
+        startupCheckBox.setOnAction(event -> {
+            if (startupCheckBox.isSelected()) {
+                enableStartup();
+            } else {
+                disableStartup();
+            }
+        });
+
+        generalSection.getChildren().addAll(generalHeader, startupCheckBox);
+
+        contentBody.getChildren().add(generalSection);
+
+        dialogRoot.getChildren().add(contentBody);
+
+        javafx.scene.Scene scene = new javafx.scene.Scene(dialogRoot);
+        settingsStage.setScene(scene);
+
+        settingsStage.setOnShown(e -> {
+            Window owner = settingsStage.getOwner();
+            if (owner != null) {
+                settingsStage.setX(owner.getX() + (owner.getWidth() - settingsStage.getWidth()) / 2);
+                settingsStage.setY(owner.getY() + (owner.getHeight() - settingsStage.getHeight()) / 2);
+            }
+        });
+
+        settingsStage.showAndWait();
+    }
+
+    @FXML
+    private void handleMinimize() {
+        Stage stage = (Stage) rootContainer.getScene().getWindow();
+        stage.setIconified(true);
+    }
+
+    @FXML
+    private void handleClose() {
+        Stage stage = (Stage) rootContainer.getScene().getWindow();
+        stage.hide(); // Consistent with tray behavior
+    }
+
+    @FXML
     private ComboBox<SystemAction> functionComboBox;
+
+    public void enableStartup() {
+        try {
+            String jarPath = new java.io.File(MainApp.class.getProtectionDomain().getCodeSource().getLocation().toURI())
+                    .getPath();
+            String command = "reg add \"HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\" " +
+                    "/v \"KeyFlowApp\" /t REG_SZ /d \"javaw -jar \\\"" + jarPath + "\\\" --tray\" /f";
+
+            Runtime.getRuntime().exec(command);
+            System.out.println("Added to Startup successfully.");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void disableStartup() {
+        try {
+            String command = "reg delete \"HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\" /v \"KeyFlowApp\" /f";
+            Runtime.getRuntime().exec(command);
+            System.out.println("Removed from Startup.");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public boolean isStartupEnabled() {
+        try {
+            String command = "reg query \"HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\" /v \"KeyFlowApp\"";
+            Process process = Runtime.getRuntime().exec(command);
+            process.waitFor();
+            return process.exitValue() == 0;
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }

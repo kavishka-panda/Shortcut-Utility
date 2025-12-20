@@ -8,43 +8,43 @@ import java.awt.event.KeyEvent;
 public enum SystemAction {
     VOLUME_UP {
         @Override
-        public void execute(Robot robot) {
+        public void execute() {
             executeVBS(175);
         }
     },
     VOLUME_DOWN {
         @Override
-        public void execute(Robot robot) {
+        public void execute() {
             executeVBS(174);
         }
     },
     MUTE {
         @Override
-        public void execute(Robot robot){
+        public void execute(){
             executeVBS(173);
         }
     },
     PLAY_PAUSE {
         @Override
-        public void execute(Robot robot) {
+        public void execute() {
             executeVBS(179);
         }
     },
     NEXT_TRACK {
         @Override
-        public void execute(Robot robot) {
+        public void execute() {
             executeVBS(176);
         }
     },
     PREV_TRACK {
         @Override
-        public void execute(Robot robot) {
+        public void execute() {
             executeVBS(177);
         }
     },
     BRIGHTNESS_UP {
         @Override
-        public void execute(Robot robot) {
+        public void execute() {
             String script = "$b = (Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightness).CurrentBrightness; " +
                     "if($b -le 90) { (Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, $b + 20) }";
             executePowerShell(script);
@@ -52,7 +52,7 @@ public enum SystemAction {
     },
     BRIGHTNESS_DOWN{
         @Override
-        public void execute(Robot robot) {
+        public void execute() {
             String script = "$b = (Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightness).CurrentBrightness; " +
                     "if($b -ge 10) { (Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, $b - 20) }";
             executePowerShell(script);
@@ -64,7 +64,7 @@ public enum SystemAction {
         return SystemAction.valueOf(value.toUpperCase());
     }
 
-    public abstract void execute(Robot robot);
+    public abstract void execute();
 
     protected void executePowerShell(String script) {
         try {

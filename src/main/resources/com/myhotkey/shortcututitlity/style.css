@@ -4,7 +4,73 @@
 }
 
 .main-container {
-    -fx-padding: 40;
+    -fx-padding: 30 40 40 40;
+}
+
+/* Custom Title Bar */
+.custom-title-bar {
+    -fx-background-color: #1e293b;
+    -fx-border-color: rgba(255, 255, 255, 0.05);
+    -fx-border-width: 0 0 1 0;
+}
+
+.title-bar-text {
+    -fx-text-fill: #94a3b8;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.title-bar-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #94a3b8;
+    -fx-padding: 5 10;
+    -fx-cursor: hand;
+    -fx-font-size: 12px;
+}
+
+.title-bar-button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.05);
+    -fx-text-fill: white;
+}
+
+.close-button:hover {
+    -fx-background-color: #ef4444;
+    -fx-text-fill: white;
+}
+
+/* Settings Redesign */
+.settings-section-header {
+    -fx-text-fill: #3b82f6;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-padding: 0 0 5 0;
+    -fx-border-color: rgba(59, 130, 246, 0.3);
+    -fx-border-width: 0 0 1 0;
+}
+
+.settings-item {
+    -fx-padding: 10 0;
+}
+
+.modern-checkbox {
+    -fx-text-fill: #94a3b8;
+    -fx-font-size: 13px;
+    -fx-cursor: hand;
+}
+
+.modern-checkbox .box {
+    -fx-background-color: #1e293b;
+    -fx-border-color: rgba(255, 255, 255, 0.1);
+    -fx-border-radius: 4;
+}
+
+.modern-checkbox:selected .box {
+    -fx-background-color: #3b82f6;
+    -fx-border-color: #3b82f6;
+}
+
+.modern-checkbox:hover .box {
+    -fx-border-color: #3b82f6;
 }
 
 .card-container {
@@ -62,9 +128,20 @@
     -fx-padding: 0;
 }
 
-#powerIcon {
+#powerIcon,
+.action-icon-button SVGPath {
     -fx-scale-x: 0.8;
     -fx-scale-y: 0.8;
+}
+
+.action-icon-button {
+    -fx-background-color: transparent;
+    -fx-cursor: hand;
+    -fx-padding: 0;
+}
+
+.action-icon-button:hover SVGPath {
+    -fx-stroke: #f1f5f9;
 }
 
 .shutdown-button:hover #powerIcon {
@@ -93,7 +170,7 @@
 }
 
 .primary-button {
-    -fx-background-color: #22c55e;
+    -fx-background-color: #3b82f6;
     -fx-text-fill: white;
     -fx-font-weight: bold;
     -fx-background-radius: 8;
@@ -101,7 +178,7 @@
 }
 
 .primary-button:hover {
-    -fx-background-color: #16a34a;
+    -fx-background-color: #2563eb;
 }
 
 /* Shortcut Cards */
