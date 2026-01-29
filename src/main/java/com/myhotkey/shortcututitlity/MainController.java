@@ -22,7 +22,6 @@ import javafx.stage.Window;
 
 import javafx.scene.layout.Priority;
 
-import javafx.scene.control.CheckBox;
 import javafx.scene.control.ButtonType;
 import javafx.scene.layout.GridPane;
 import javafx.geometry.Insets;
@@ -30,6 +29,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class MainController {
     @FXML
@@ -102,6 +102,9 @@ public class MainController {
             if (sharedShortcutList != null) {
                 sharedShortcutList.remove(shortcut);
                 jsonManager.saveShortcuts(sharedShortcutList);
+                if (hotkeyService != null) {
+                    hotkeyService.removeShortcut(shortcut.getKeyCombo());
+                }
             }
         });
 
@@ -143,11 +146,6 @@ public class MainController {
             stage.setX(event.getScreenX() - xOffset);
             stage.setY(event.getScreenY() - yOffset);
         });
-
-        // Ensure startup is enabled by default
-        if (!isStartupEnabled()) {
-            enableStartup();
-        }
     }
 
     // 2. MANUAL: Called by MainApp to pass shared data.
@@ -241,10 +239,14 @@ public class MainController {
         Shortcut newShortcut = new Shortcut(keys, action);
 
         if (sharedShortcutList == null)
-            sharedShortcutList = new ArrayList<>();
+            sharedShortcutList = new CopyOnWriteArrayList<>();
 
         sharedShortcutList.add(newShortcut);
         jsonManager.saveShortcuts(sharedShortcutList);
+
+        if (hotkeyService != null) {
+            hotkeyService.addShortcut(newShortcut);
+        }
 
         addShortcutToUI(newShortcut); // Much cleaner call
 
@@ -276,18 +278,9 @@ public class MainController {
         Label generalHeader = new Label("GENERAL SETTINGS");
         generalHeader.getStyleClass().add("settings-section-header");
 
-        CheckBox startupCheckBox = new CheckBox("Launch at system startup");
-        startupCheckBox.setSelected(isStartupEnabled());
-        startupCheckBox.getStyleClass().add("modern-checkbox");
-        startupCheckBox.setOnAction(event -> {
-            if (startupCheckBox.isSelected()) {
-                enableStartup();
-            } else {
-                disableStartup();
-            }
-        });
+        // TODO: Add general settings options here
 
-        generalSection.getChildren().addAll(generalHeader, startupCheckBox);
+        generalSection.getChildren().add(generalHeader);
 
         contentBody.getChildren().add(generalSection);
 
@@ -322,38 +315,4 @@ public class MainController {
     @FXML
     private ComboBox<SystemAction> functionComboBox;
 
-    public void enableStartup() {
-        try {
-            String jarPath = new java.io.File(MainApp.class.getProtectionDomain().getCodeSource().getLocation().toURI())
-                    .getPath();
-            String command = "reg add \"HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\" " +
-                    "/v \"KeyFlowApp\" /t REG_SZ /d \"javaw -jar \\\"" + jarPath + "\\\" --tray\" /f";
-
-            Runtime.getRuntime().exec(command);
-            System.out.println("Added to Startup successfully.");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void disableStartup() {
-        try {
-            String command = "reg delete \"HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\" /v \"KeyFlowApp\" /f";
-            Runtime.getRuntime().exec(command);
-            System.out.println("Removed from Startup.");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public boolean isStartupEnabled() {
-        try {
-            String command = "reg query \"HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\" /v \"KeyFlowApp\"";
-            Process process = Runtime.getRuntime().exec(command);
-            process.waitFor();
-            return process.exitValue() == 0;
-        } catch (Exception e) {
-            return false;
-        }
-    }
 }

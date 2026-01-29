@@ -24,6 +24,35 @@ import atlantafx.base.theme.PrimerDark;
 public class MainApp extends Application {
     private Stage stage;
     private GlobalHotkeyService hotkeyService;
+    private JsonManager jsonManager;
+    private List<Shortcut> sharedShortcutList;
+
+    @Override
+    public void init() throws Exception {
+        // 1. Initialize Storage and Load Shortcuts
+        jsonManager = new JsonManager();
+        sharedShortcutList = jsonManager.loadShortcuts();
+
+        // 2. Setup the Background Service with the shared list
+        hotkeyService = new GlobalHotkeyService();
+        hotkeyService.setShortcuts(sharedShortcutList);
+
+        // Start service in a background thread after a short delay to prevent startup
+        // freezes
+        Thread hookThread = new Thread(() -> {
+            try {
+                // If started from startup, wait for the system to settle
+                if (getParameters().getRaw().contains("--tray")) {
+                    Thread.sleep(15000);
+                }
+                hotkeyService.startHook();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        });
+        hookThread.setDaemon(true);
+        hookThread.start();
+    }
 
     @Override
     public void start(Stage stage) throws Exception {
@@ -40,19 +69,6 @@ public class MainApp extends Application {
         } else {
             stage.show();
         }
-
-        // 1. Initialize Storage and Load Shortcuts
-        JsonManager jsonManager = new JsonManager();
-        List<Shortcut> sharedShortcutList = jsonManager.loadShortcuts();
-
-        // 2. Setup the Background Service with the shared list
-        hotkeyService = new GlobalHotkeyService();
-        hotkeyService.setShortcuts(sharedShortcutList);
-
-        // Start service in a background thread
-        Thread hookThread = new Thread(() -> hotkeyService.startHook());
-        hookThread.setDaemon(true);
-        hookThread.start();
 
         // 3. Load UI and pass the shared list to the Controller
         FXMLLoader loader = new FXMLLoader(getClass().getResource("MainView.fxml"));
@@ -75,8 +91,10 @@ public class MainApp extends Application {
         }
 
         stage.setScene(scene);
-        stage.show();
-        stage.centerOnScreen();
+        if (!startMinimized) {
+            stage.show();
+            stage.centerOnScreen();
+        }
 
         stage.setOnCloseRequest(event -> {
             event.consume(); // Prevent the actual closing
@@ -126,16 +144,4 @@ public class MainApp extends Application {
         super.stop();
     }
 
-    public static void main(String[] args) {
-        // FlatLaf must be initialized before launch for Swing components
-        SwingUtilities.invokeLater(() -> {
-            try {
-                UIManager.setLookAndFeel(new com.formdev.flatlaf.FlatDarkLaf());
-            } catch (Exception e) {
-                System.err.println("FlatLaf failed to initialize.");
-            }
-        });
-
-        launch(args);
-    }
 }

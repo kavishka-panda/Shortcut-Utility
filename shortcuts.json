@@ -1,7 +1,4 @@
 [ {
-  "action" : "VOLUME_DOWN",
-  "keyCombo" : "Ctrl+F11"
-}, {
   "action" : "VOLUME_UP",
   "keyCombo" : "Ctrl+F12"
 }, {
@@ -22,4 +19,7 @@
 }, {
   "action" : "NEXT_TRACK",
   "keyCombo" : "Ctrl+F7"
+}, {
+  "action" : "VOLUME_DOWN",
+  "keyCombo" : "Ctrl+F11"
 } ]

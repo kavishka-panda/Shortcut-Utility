@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,14 +33,15 @@ public class JsonManager {
        File file = new File(FILE_PATH);
         if (!file.exists()) {
             System.out.println("No existing shortcut file found. Starting fresh.");
-            return new ArrayList<>();
+            return new CopyOnWriteArrayList<>();
         }
 
         try {
-            return mapper.readValue(file, new TypeReference<List<Shortcut>>() {});
+            List<Shortcut> loadedList = mapper.readValue(file, new TypeReference<List<Shortcut>>() {});
+            return new CopyOnWriteArrayList<>(loadedList);
         } catch (IOException e) {
             System.err.println("Error loading shortcuts: " + e.getMessage());
-            return new ArrayList<>();
+            return new CopyOnWriteArrayList<>();
         }
     }
 }
