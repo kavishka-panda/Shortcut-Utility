@@ -17,7 +17,7 @@ import java.awt.Toolkit;
 import java.awt.TrayIcon;
 import java.util.List;
 
-import javax.swing.*;
+import javax.swing.SwingUtilities;
 
 import atlantafx.base.theme.PrimerDark;
 
@@ -62,7 +62,7 @@ public class MainApp extends Application {
         stage.initStyle(StageStyle.UNDECORATED);
         Platform.setImplicitExit(false);
 
-        createTrayIcon(stage);
+        SwingUtilities.invokeLater(() -> createTrayIcon(stage));
         boolean startMinimized = getParameters().getRaw().contains("--tray");
         if (startMinimized) {
             System.out.println("Starting minimized");
@@ -112,7 +112,7 @@ public class MainApp extends Application {
             PopupMenu popup = new PopupMenu();
 
             MenuItem showItem = new MenuItem("Open KeyFlow");
-            showItem.addActionListener(e -> Platform.runLater(stage::show));
+            showItem.addActionListener(e -> showStage());
 
             MenuItem exitItem = new MenuItem("Exit");
             exitItem.addActionListener(e -> {
@@ -126,7 +126,7 @@ public class MainApp extends Application {
 
             TrayIcon trayIcon = new TrayIcon(image, "KeyFlow Utility", popup);
             trayIcon.setImageAutoSize(true);
-            trayIcon.addActionListener(e -> Platform.runLater(stage::show));
+            trayIcon.addActionListener(e -> showStage());
 
             try {
                 tray.add(trayIcon);
@@ -134,6 +134,17 @@ public class MainApp extends Application {
                 System.err.println("TrayIcon could not be added.");
             }
         }
+    }
+
+    private void showStage() {
+        Platform.runLater(() -> {
+            if (stage != null) {
+                stage.show();
+                stage.setIconified(false);
+                stage.toFront();
+                stage.requestFocus();
+            }
+        });
     }
 
     @Override
