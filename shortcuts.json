@@ -1,0 +1,34 @@
+[
+  {
+    "action": "VOLUME_UP",
+    "keyCombo": "Ctrl+F12"
+  },
+  {
+    "action": "VOLUME_DOWN",
+    "keyCombo": "Ctrl+F11"
+  },
+  {
+    "action": "MUTE",
+    "keyCombo": "Ctrl+F10"
+  },
+  {
+    "action": "BRIGHTNESS_UP",
+    "keyCombo": "Ctrl+F9"
+  },
+  {
+    "action": "BRIGHTNESS_DOWN",
+    "keyCombo": "Ctrl+F8"
+  },
+  {
+    "action": "PLAY_PAUSE",
+    "keyCombo": "Ctrl+F6"
+  },
+  {
+    "action": "PREV_TRACK",
+    "keyCombo": "Ctrl+F5"
+  },
+  {
+    "action": "NEXT_TRACK",
+    "keyCombo": "Ctrl+F7"
+  }
+]

@@ -5,10 +5,13 @@ module com.myhotkey.shortcututitlity {
     requires com.formdev.flatlaf; // Required to use FlatLaf
     requires com.github.kwhat.jnativehook;
     requires com.fasterxml.jackson.databind;
+    requires atlantafx.base;
+
+    opens com.myhotkey.shortcututitlity.enums to com.fasterxml.jackson.databind;
+    opens com.myhotkey.shortcututitlity.model to com.fasterxml.jackson.databind;
 
     opens com.myhotkey.shortcututitlity to javafx.fxml;
 
     exports com.myhotkey.shortcututitlity;
     exports com.myhotkey.shortcututitlity.model;
-    opens com.myhotkey.shortcututitlity.model to javafx.fxml;
 }
