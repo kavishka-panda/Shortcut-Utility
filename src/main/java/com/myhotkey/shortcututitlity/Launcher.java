@@ -7,8 +7,10 @@ import javax.swing.UIManager;
 public class Launcher {
     public static void main(String[] args) {
         // 1. Configure Swing/FlatLaf on the Event Dispatch Thread
-        // We do this BEFORE JavaFX starts to ensure the TrayIcon 
+        // We do this BEFORE JavaFX starts to ensure the TrayIcon
         // and any Swing dialogs look correct immediately.
+        System.setProperty("jnativehook.lib.path", System.getProperty("java.io.tmpdir"));
+
         try {
             SwingUtilities.invokeAndWait(() -> {
                 try {

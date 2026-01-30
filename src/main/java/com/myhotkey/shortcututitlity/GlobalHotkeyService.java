@@ -13,6 +13,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.function.Consumer;
 
 /**
  * Service for managing global keyboard shortcuts across the entire system.
@@ -21,28 +22,31 @@ import java.util.logging.Logger;
  * Thread-safe implementation with optimized shortcut lookup.
  */
 public class GlobalHotkeyService implements NativeKeyListener, AutoCloseable {
-    
+
     private static final Logger LOGGER = Logger.getLogger(GlobalHotkeyService.class.getName());
-    
+
     // Thread-safe shortcut storage with fast lookup
     private final Map<String, Shortcut> shortcutMap = new ConcurrentHashMap<>();
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
-    
+
     // Atomic flag for enabling/disabling the service
     private final AtomicBoolean enabled = new AtomicBoolean(false);
-    
+
     // Track if we've registered the native hook
     private final AtomicBoolean hooked = new AtomicBoolean(false);
-    
+
     // Statistics tracking
     private final AtomicBoolean statisticsEnabled = new AtomicBoolean(false);
     private volatile long eventsProcessed = 0;
     private volatile long shortcutsTriggered = 0;
     private volatile long lastEventTimestamp = 0;
-    
+
     // Debouncing to prevent double-triggering
     private static final long DEBOUNCE_THRESHOLD_MS = 50;
     private final Map<String, Long> lastTriggerTime = new ConcurrentHashMap<>();
+
+    // Listener for raw key press events
+    private Consumer<String> onKeyPressedListener;
 
     /**
      * Creates a new GlobalHotkeyService instance.
@@ -61,7 +65,7 @@ public class GlobalHotkeyService implements NativeKeyListener, AutoCloseable {
         lock.writeLock().lock();
         try {
             shortcutMap.clear();
-            
+
             if (shortcuts != null) {
                 for (Shortcut shortcut : shortcuts) {
                     if (shortcut != null && isValidShortcut(shortcut)) {
@@ -215,7 +219,7 @@ public class GlobalHotkeyService implements NativeKeyListener, AutoCloseable {
      */
     public void unregisterService() {
         enabled.set(false);
-        
+
         if (!hooked.get()) {
             LOGGER.info("Native hook not registered, nothing to unregister");
             return;
@@ -239,43 +243,33 @@ public class GlobalHotkeyService implements NativeKeyListener, AutoCloseable {
         unregisterService();
     }
 
-    @Override
-    public void nativeKeyPressed(NativeKeyEvent e) {
-        if (!enabled.get()) {
-            return;
-        }
+   @Override
+public void nativeKeyPressed(NativeKeyEvent e) {
+    if (!enabled.get()) return;
 
-        updateStatistics();
+    updateStatistics();
+    if (isModifierKey(e.getKeyCode())) return;
 
-        // Ignore lone modifier key presses
-        if (isModifierKey(e.getKeyCode())) {
-            return;
-        }
+    try {
+        String currentCombo = buildKeyCombo(e);
+        String normalizedCombo = normalizeKeyCombo(currentCombo);
 
+        if (isDebouncedEvent(normalizedCombo)) return;
+
+        lock.readLock().lock();
         try {
-            String currentCombo = buildKeyCombo(e);
-            String normalizedCombo = normalizeKeyCombo(currentCombo);
-
-            // Check for debounce
-            if (isDebouncedEvent(normalizedCombo)) {
-                LOGGER.fine("Debounced duplicate event: " + normalizedCombo);
-                return;
+            Shortcut shortcut = shortcutMap.get(normalizedCombo);
+            if (shortcut != null) {
+                // We only execute and notify if a valid shortcut was found
+                executeShortcut(shortcut, normalizedCombo);
             }
-
-            // Fast lookup in map
-            lock.readLock().lock();
-            try {
-                Shortcut shortcut = shortcutMap.get(normalizedCombo);
-                if (shortcut != null) {
-                    executeShortcut(shortcut, normalizedCombo);
-                }
-            } finally {
-                lock.readLock().unlock();
-            }
-        } catch (Exception ex) {
-            LOGGER.log(Level.SEVERE, "Error processing key event", ex);
+        } finally {
+            lock.readLock().unlock();
         }
+    } catch (Exception ex) {
+        LOGGER.log(Level.SEVERE, "Error processing key event", ex);
     }
+}
 
     @Override
     public void nativeKeyReleased(NativeKeyEvent e) {
@@ -349,7 +343,7 @@ public class GlobalHotkeyService implements NativeKeyListener, AutoCloseable {
         if (shortcut == null) {
             return false;
         }
-        
+
         String keyCombo = shortcut.getKeyCombo();
         if (keyCombo == null || keyCombo.trim().isEmpty()) {
             LOGGER.warning("Invalid shortcut: empty key combination");
@@ -372,9 +366,9 @@ public class GlobalHotkeyService implements NativeKeyListener, AutoCloseable {
      */
     private boolean isModifierKey(int keyCode) {
         return keyCode == NativeKeyEvent.VC_CONTROL ||
-               keyCode == NativeKeyEvent.VC_ALT ||
-               keyCode == NativeKeyEvent.VC_SHIFT ||
-               keyCode == NativeKeyEvent.VC_META;
+                keyCode == NativeKeyEvent.VC_ALT ||
+                keyCode == NativeKeyEvent.VC_SHIFT ||
+                keyCode == NativeKeyEvent.VC_META;
     }
 
     /**
@@ -386,11 +380,11 @@ public class GlobalHotkeyService implements NativeKeyListener, AutoCloseable {
     private boolean isDebouncedEvent(String keyCombo) {
         long now = System.currentTimeMillis();
         Long lastTime = lastTriggerTime.get(keyCombo);
-        
+
         if (lastTime != null && (now - lastTime) < DEBOUNCE_THRESHOLD_MS) {
             return true;
         }
-        
+
         lastTriggerTime.put(keyCombo, now);
         return false;
     }
@@ -401,18 +395,24 @@ public class GlobalHotkeyService implements NativeKeyListener, AutoCloseable {
      * @param shortcut The shortcut to execute
      * @param keyCombo The key combination (for logging)
      */
-    private void executeShortcut(Shortcut shortcut, String keyCombo) {
-        try {
-            LOGGER.fine("Executing shortcut: " + keyCombo);
-            shortcut.getAction().execute();
-            
-            if (statisticsEnabled.get()) {
-                shortcutsTriggered++;
-            }
-        } catch (Exception ex) {
-            LOGGER.log(Level.SEVERE, "Error executing shortcut: " + keyCombo, ex);
+private void executeShortcut(Shortcut shortcut, String keyCombo) {
+    try {
+        // 1. Perform the System Action
+        shortcut.getAction().execute();
+        
+        // 2. Notify the UI only if a shortcut was successfully triggered
+        if (onKeyPressedListener != null) {
+            // We pass the Action Name directly, not the raw key combo
+            onKeyPressedListener.accept(shortcut.getAction().name());
         }
+
+        if (statisticsEnabled.get()) {
+            shortcutsTriggered++;
+        }
+    } catch (Exception ex) {
+        LOGGER.log(Level.SEVERE, "Error executing shortcut", ex);
     }
+}
 
     /**
      * Updates internal statistics.
@@ -478,5 +478,14 @@ public class GlobalHotkeyService implements NativeKeyListener, AutoCloseable {
      */
     public int getShortcutCount() {
         return shortcutMap.size();
+    }
+
+    /**
+     * Sets a listener to be notified when a key combination is pressed.
+     * 
+     * @param listener The consumer to accept the key combo string
+     */
+    public void setOnKeyPressedListener(Consumer<String> listener) {
+        this.onKeyPressedListener = listener;
     }
 }

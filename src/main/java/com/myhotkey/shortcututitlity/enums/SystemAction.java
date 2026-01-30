@@ -5,14 +5,22 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.io.InputStream;
 
 /**
  * Enum representing system-level actions that can be triggered by keyboard
@@ -183,43 +191,43 @@ public enum SystemAction {
             return nircmdAvailable;
         }
 
-        // Check common NirCmd locations
-        String[] possiblePaths = {
-                "nircmd.exe", // In PATH
-                "src/main/resources/nircmd.exe", // Development path
-                "C:\\Windows\\nircmd.exe",
-                "C:\\Windows\\System32\\nircmd.exe",
-                System.getProperty("user.home") + "\\nircmd.exe",
-                System.getProperty("user.dir") + "\\nircmd.exe",
-                System.getProperty("user.dir") + "\\lib\\nircmd.exe"
-        };
+        // 1. Define the temporary path where NirCmd will live
+        Path tempPath = Paths.get(System.getProperty("java.io.tmpdir"), "nircmd.exe");
+        nircmdPath = tempPath.toString();
 
-        for (String path : possiblePaths) {
-            if (Files.exists(Paths.get(path))) {
-                nircmdPath = path;
-                nircmdAvailable = true;
-                LOGGER.info("NirCmd found at: " + path);
-                return true;
-            }
+        // 2. If it's already there, we're good
+        if (Files.exists(tempPath)) {
+            nircmdAvailable = true;
+            return true;
         }
 
-        // Try executing nircmd to see if it's in PATH
+        // 3. Extraction Logic: Pull from Resources to Temp Folder
+        // Based on your structure, the resource path is "/image/nircmd.exe"
+        try (InputStream is = SystemAction.class.getResourceAsStream("/image/nircmd.exe")) {
+            if (is != null) {
+                Files.copy(is, tempPath, StandardCopyOption.REPLACE_EXISTING);
+                nircmdAvailable = true;
+                LOGGER.info("NirCmd extracted successfully to: " + nircmdPath);
+                return true;
+            } else {
+                LOGGER.warning("NirCmd not found in resources at /image/nircmd.exe");
+            }
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "Failed to extract NirCmd to temporary directory", e);
+        }
+
+        // 4. Final fallback: Check if it's just in the system PATH
         try {
-            Process process = new ProcessBuilder("nircmd.exe", "win", "min", "process", "cmd.exe")
-                    .start();
-            boolean completed = process.waitFor(1, TimeUnit.SECONDS);
-            if (completed && process.exitValue() == 0) {
+            Process process = new ProcessBuilder("nircmd.exe", "help").start();
+            if (process.waitFor(500, TimeUnit.MILLISECONDS) && process.exitValue() == 0) {
                 nircmdPath = "nircmd.exe";
                 nircmdAvailable = true;
-                LOGGER.info("NirCmd is available in PATH");
                 return true;
             }
         } catch (Exception e) {
-            // NirCmd not available
-        }
+            /* Not in path */ }
 
         nircmdAvailable = false;
-        LOGGER.info("NirCmd not found - using VBS method for media keys");
         return false;
     }
 

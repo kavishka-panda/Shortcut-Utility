@@ -1,11 +1,17 @@
 package com.myhotkey.shortcututitlity;
 
 import com.myhotkey.shortcututitlity.model.Shortcut;
+
+import javafx.animation.PauseTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Label;
+import javafx.scene.layout.StackPane;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
@@ -20,6 +26,7 @@ import java.util.List;
 import javax.swing.SwingUtilities;
 
 import atlantafx.base.theme.PrimerDark;
+import javafx.util.Duration;
 
 public class MainApp extends Application {
     private Stage stage;
@@ -36,6 +43,7 @@ public class MainApp extends Application {
         // 2. Setup the Background Service with the shared list
         hotkeyService = new GlobalHotkeyService();
         hotkeyService.setShortcuts(sharedShortcutList);
+        hotkeyService.setOnKeyPressedListener(this::showNotification);
 
         // Start service in a background thread after a short delay to prevent startup
         // freezes
@@ -52,6 +60,41 @@ public class MainApp extends Application {
         });
         hookThread.setDaemon(true);
         hookThread.start();
+
+        // In your init() or start() method
+        hotkeyService.setOnKeyPressedListener(actionName -> {
+            String displayMessage;
+            String icon;
+
+            switch (actionName) {
+                case "VOLUME_UP":
+                    displayMessage = "Volume Up";
+                    icon = "🔊";
+                    break;
+                case "VOLUME_DOWN":
+                    displayMessage = "Volume Down";
+                    icon = "🔉";
+                    break;
+                case "MUTE":
+                    displayMessage = "Mute";
+                    icon = "🔇";
+                    break;
+                case "BRIGHTNESS_UP":
+                    displayMessage = "Brightness Up";
+                    icon = "☀️";
+                    break;
+                case "BRIGHTNESS_DOWN":
+                    displayMessage = "Brightness Down";
+                    icon = "🌙";
+                    break;
+                default:
+                    displayMessage = actionName.replace("_", " ");
+                    icon = "✨";
+                    break;
+            }
+
+            showNotification(displayMessage + " " + icon);
+        });
     }
 
     @Override
@@ -153,6 +196,48 @@ public class MainApp extends Application {
             hotkeyService.unregisterService();
         }
         super.stop();
+    }
+
+    public void showNotification(String functionName) {
+        Platform.runLater(() -> {
+            Stage stage = new Stage();
+            stage.initStyle(StageStyle.TRANSPARENT);
+            stage.setAlwaysOnTop(true);
+
+            // Styling the notification box
+            Label label = new Label(functionName);
+            label.setStyle("-fx-background-color: rgba(40, 40, 40, 0.9); " +
+                    "-fx-text-fill: white; " +
+                    "-fx-padding: 12 20; " +
+                    "-fx-background-radius: 10; " +
+                    "-fx-font-family: 'Segoe UI', sans-serif; " +
+                    "-fx-font-size: 14px; " +
+                    "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.5), 10, 0, 0, 0);");
+
+            StackPane root = new StackPane(label);
+            root.setStyle("-fx-background-color: transparent;");
+
+            Scene scene = new Scene(root);
+            scene.setFill(null);
+            stage.setScene(scene);
+
+            // Calculate Bottom-Right Position
+            Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
+
+            // We must show the stage to calculate its actual width/height
+            stage.show();
+
+            double x = screenBounds.getMaxX() - stage.getWidth() - 30; // 30px margin from right
+            double y = screenBounds.getMaxY() - stage.getHeight() - 30; // 30px margin from bottom
+
+            stage.setX(x);
+            stage.setY(y);
+
+            // Stay visible for 1.5 seconds, then close
+            PauseTransition delay = new PauseTransition(Duration.seconds(1.5));
+            delay.setOnFinished(e -> stage.close());
+            delay.play();
+        });
     }
 
 }
