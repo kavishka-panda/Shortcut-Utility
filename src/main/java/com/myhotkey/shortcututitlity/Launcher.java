@@ -3,14 +3,23 @@ package com.myhotkey.shortcututitlity;
 import javafx.application.Application;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import java.io.IOException;
+import java.net.ServerSocket;
 
 public class Launcher {
-    public static void main(String[] args) {
-        // 1. Configure Swing/FlatLaf on the Event Dispatch Thread
-        // We do this BEFORE JavaFX starts to ensure the TrayIcon
-        // and any Swing dialogs look correct immediately.
-        System.setProperty("jnativehook.lib.path", System.getProperty("java.io.tmpdir"));
+    private static final int PORT = 58432;
+    private static ServerSocket serverSocket;
 
+    public static void main(String[] args) {
+        try {
+            serverSocket = new ServerSocket(PORT);
+        } catch (IOException e) {
+            System.err.println("KeyFlow Utility is already running.");
+            System.exit(0); 
+            return;
+        }
+
+        System.setProperty("jnativehook.lib.path", System.getProperty("java.io.tmpdir"));
         try {
             SwingUtilities.invokeAndWait(() -> {
                 try {
@@ -23,7 +32,6 @@ public class Launcher {
             e.printStackTrace();
         }
 
-        // 2. Launch JavaFX
         Application.launch(MainApp.class, args);
     }
 }
