@@ -105,6 +105,10 @@ public class MainApp extends Application {
         stage.initStyle(StageStyle.UNDECORATED);
         Platform.setImplicitExit(false);
 
+        // Check for updates when the application starts
+        UpdateChecker updateChecker = new UpdateChecker();
+        updateChecker.checkForUpdates();
+
         SwingUtilities.invokeLater(() -> createTrayIcon(stage));
         boolean startMinimized = getParameters().getRaw().contains("--tray");
         if (startMinimized) {
