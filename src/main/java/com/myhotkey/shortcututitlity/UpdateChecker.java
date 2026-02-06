@@ -1,13 +1,18 @@
 package com.myhotkey.shortcututitlity;
 
 import javafx.application.Platform;
+import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 
 import java.awt.Desktop;
 import java.io.BufferedReader;
@@ -30,8 +35,14 @@ public class UpdateChecker {
     private String githubRepoOwner;
     private String githubRepoName;
     private String githubApiUrl;
+    private Stage primaryStage;
     
     public UpdateChecker() {
+        loadConfiguration();
+    }
+    
+    public UpdateChecker(Stage primaryStage) {
+        this.primaryStage = primaryStage;
         loadConfiguration();
     }
     
@@ -156,40 +167,75 @@ public class UpdateChecker {
      * @param updateInfo Information about the available update
      */
     private void showUpdateNotification(UpdateInfo updateInfo) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Update Available");
-        alert.setHeaderText("New Version Available: " + updateInfo.version);
+    Platform.runLater(() -> {
+        Stage stage = new Stage();
+        stage.initStyle(StageStyle.TRANSPARENT); // Title bar එක අයින් කරයි
         
-        // Create content with clickable link
-        VBox content = new VBox(10);
+        // Taskbar එකේ පෙන්වීම වැළැක්වීමට (primaryStage ඇතුළත් කරන්න)
+        if (this.primaryStage != null) { 
+            stage.initOwner(this.primaryStage); 
+        }
         
-        Label messageLabel = new Label(
-            "A new version of KeyFlow is available!\n\n" +
-            "Current Version: " + currentVersion + "\n" +
-            "Latest Version: " + updateInfo.version + "\n\n" +
-            "Click the link below to download the latest version:"
-        );
+        stage.setAlwaysOnTop(true);
+
+        // UI Container එක
+        VBox root = new VBox(15);
+        root.setStyle("-fx-background-color: #2b2b2b; " +
+                     "-fx-padding: 25; " +
+                     "-fx-background-radius: 15; " +
+                     "-fx-border-color: #3d3d3d; " +
+                     "-fx-border-radius: 15; " +
+                     "-fx-border-width: 2;");
+        root.setAlignment(Pos.CENTER);
+
+        // Heading
+        Label titleLabel = new Label("UPDATE AVAILABLE");
+        titleLabel.setStyle("-fx-text-fill: #00ffcc; -fx-font-weight: bold; -fx-font-size: 16px;");
+
+        // Version Details
+        Label versionInfo = new Label("A new version is ready to download!");
+        versionInfo.setStyle("-fx-text-fill: white; -fx-font-size: 13px;");
         
-        Hyperlink downloadLink = new Hyperlink(updateInfo.downloadUrl);
-        downloadLink.setOnAction(e -> {
+        Label versions = new Label(currentVersion + "  ➔  " + updateInfo.version);
+        versions.setStyle("-fx-text-fill: #aaaaaa; -fx-font-family: 'Consolas';");
+
+        // Download Button (Hyperlink එක වෙනුවට)
+        Button downloadBtn = new Button("Download Now");
+        downloadBtn.setStyle("-fx-background-color: #00ffcc; -fx-text-fill: black; " +
+                           "-fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand;");
+        downloadBtn.setMinWidth(150);
+        
+        downloadBtn.setOnAction(e -> {
             try {
-                // Open the download page in the default browser
                 if (Desktop.isDesktopSupported()) {
                     Desktop.getDesktop().browse(new URI(updateInfo.downloadUrl));
+                    stage.close();
                 }
             } catch (Exception ex) {
                 System.err.println("Failed to open browser: " + ex.getMessage());
             }
         });
+
+        // Close Button (පහළින් ඇති කුඩා button එකක්)
+        Button closeBtn = new Button("Later");
+        closeBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #888888; -fx-cursor: hand;");
+        closeBtn.setOnAction(e -> stage.close());
+
+        root.getChildren().addAll(titleLabel, versionInfo, versions, downloadBtn, closeBtn);
+
+        Scene scene = new Scene(root);
+        scene.setFill(null); // පසුබිම විනිවිද පෙනෙන ලෙස තබයි
+        stage.setScene(scene);
+
+        // තිරයේ මැදට වන්නට පෙන්වීම
+        stage.show();
         
-        content.getChildren().addAll(messageLabel, downloadLink);
-        alert.getDialogPane().setContent(content);
-        
-        // Add buttons
-        alert.getButtonTypes().setAll(ButtonType.OK, ButtonType.CANCEL);
-        
-        alert.showAndWait();
-    }
+        // මැදට position කිරීම
+        Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
+        stage.setX((screenBounds.getWidth() - stage.getWidth()) / 2);
+        stage.setY((screenBounds.getHeight() - stage.getHeight()) / 2);
+    });
+}
     
     /**
      * Inner class to hold update information
